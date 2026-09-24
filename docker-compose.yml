@@ -1,0 +1,411 @@
+services:
+  # ===== NGINX REVERSE PROXY =====
+  nginx:
+    image: nginx:alpine
+    container_name: buildtruck-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - buildtruck-user-service
+      - buildtruck-project-service
+      - buildtruck-documentation-service
+      - buildtruck-incident-service
+      - buildtruck-machinery-service
+      - buildtruck-materials-service
+      - buildtruck-configuration-service
+      - buildtruck-personnel-service
+      - buildtruck-notification-service
+      - buildtruck-stats-service
+    networks:
+      - buildtruck-network
+    restart: always
+
+  # ===== AUTH + USERS MICROSERVICE =====
+  buildtruck-user-service:
+    image: ${IMAGE_PREFIX}/buildtruck-user-service:latest
+    container_name: buildtruck-user-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_users;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - EmailSettings__SmtpPassword=${SMTP_PASSWORD}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== PROJECTS MICROSERVICE =====
+  buildtruck-project-service:
+    image: ${IMAGE_PREFIX}/buildtruck-project-service:latest
+    container_name: buildtruck-project-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_projects;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== DOCUMENTATION MICROSERVICE =====
+  buildtruck-documentation-service:
+    image: ${IMAGE_PREFIX}/buildtruck-documentation-service:latest
+    container_name: buildtruck-documentation-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_documentation;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== INCIDENTS MICROSERVICE =====
+  buildtruck-incident-service:
+    image: ${IMAGE_PREFIX}/buildtruck-incident-service:latest
+    container_name: buildtruck-incident-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_incidents;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== MACHINERY MICROSERVICE =====
+  buildtruck-machinery-service:
+    image: ${IMAGE_PREFIX}/buildtruck-machinery-service:latest
+    container_name: buildtruck-machinery-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_machinery;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== MATERIALS MICROSERVICE =====
+  buildtruck-materials-service:
+    image: ${IMAGE_PREFIX}/buildtruck-materials-service:latest
+    container_name: buildtruck-materials-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+      buildtruck-project-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_materials;user=root;password=${MYSQL_PASSWORD}
+      - ConnectionStrings__Redis=redis:6379
+      - CacheSettings__Enabled=true
+      - CacheSettings__TtlSeconds=300
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+      - ProjectService__BaseUrl=http://buildtruck-project-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== PERSONNEL MICROSERVICE =====
+  buildtruck-personnel-service:
+    image: ${IMAGE_PREFIX}/buildtruck-personnel-service:latest
+    container_name: buildtruck-personnel-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+      buildtruck-project-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_personnel;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - ProjectService__BaseUrl=http://buildtruck-project-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== CONFIGURATIONS MICROSERVICE =====
+  buildtruck-configuration-service:
+    image: ${IMAGE_PREFIX}/buildtruck-configuration-service:latest
+    container_name: buildtruck-configuration-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_configurations;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== NOTIFICATION MICROSERVICE =====
+  buildtruck-notification-service:
+    image: ${IMAGE_PREFIX}/buildtruck-notification-service:latest
+    container_name: buildtruck-notification-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        # service_started, no service_healthy: el publicador degrada a entrega
+        # en linea si el broker no responde. Un broker caido no debe impedir
+        # que arranque la API.
+        condition: service_started
+      buildtruck-user-service:
+        condition: service_started
+      buildtruck-project-service:
+        condition: service_started
+      buildtruck-incident-service:
+        condition: service_started
+      buildtruck-machinery-service:
+        condition: service_started
+      buildtruck-personnel-service:
+        condition: service_started
+      buildtruck-configuration-service:
+        condition: service_started
+      buildtruck-materials-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_notifications;user=root;password=${MYSQL_PASSWORD}
+      - RabbitMq__Host=rabbitmq
+      - RabbitMq__Port=5672
+      - RabbitMq__Username=${RABBITMQ_USER:-buildtruck}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - RabbitMq__Enabled=true
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - EmailSettings__SmtpPassword=${SMTP_PASSWORD}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+      - ProjectService__BaseUrl=http://buildtruck-project-service:8080
+      - MachineryService__BaseUrl=http://buildtruck-machinery-service:8080
+      - IncidentService__BaseUrl=http://buildtruck-incident-service:8080
+      - PersonnelService__BaseUrl=http://buildtruck-personnel-service:8080
+      - ConfigurationService__BaseUrl=http://buildtruck-configuration-service:8080
+      - MaterialsService__BaseUrl=http://buildtruck-materials-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== STATS MICROSERVICE =====
+  buildtruck-stats-service:
+    image: ${IMAGE_PREFIX}/buildtruck-stats-service:latest
+    container_name: buildtruck-stats-service
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      buildtruck-user-service:
+        condition: service_started
+      buildtruck-project-service:
+        condition: service_started
+      buildtruck-personnel-service:
+        condition: service_started
+      buildtruck-machinery-service:
+        condition: service_started
+      buildtruck-incident-service:
+        condition: service_started
+      buildtruck-materials-service:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=server=mysql;port=3306;database=buildtruck_stats;user=root;password=${MYSQL_PASSWORD}
+      - TokenSettings__SecretKey=${JWT_SECRET_KEY}
+      - TokenSettings__Issuer=${JWT_ISSUER}
+      - TokenSettings__Audience=${JWT_AUDIENCE}
+      - UserService__BaseUrl=http://buildtruck-user-service:8080
+      - ProjectService__BaseUrl=http://buildtruck-project-service:8080
+      - PersonnelService__BaseUrl=http://buildtruck-personnel-service:8080
+      - MachineryService__BaseUrl=http://buildtruck-machinery-service:8080
+      - IncidentService__BaseUrl=http://buildtruck-incident-service:8080
+      - MaterialsService__BaseUrl=http://buildtruck-materials-service:8080
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 128m
+
+  # ===== MYSQL =====
+  mysql:
+    image: mysql:8.0
+    container_name: buildtruck-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: buildtruckuser
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 380m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== REDIS CACHE =====
+  redis:
+    image: redis:7-alpine
+    container_name: buildtruck-redis
+    command: >
+      redis-server
+      --maxmemory 32mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly no
+    expose:
+      - "6379"
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 64m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ===== RABBITMQ MESSAGE BROKER =====
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    container_name: buildtruck-rabbitmq
+    # El proceso debe poder leer /var/lib/rabbitmq/.erlang.cookie.
+    user: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-buildtruck}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      # No usar RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 3.13 aborta el arranque
+      # si detecta esa variable. RabbitMQ lee el limite del cgroup (mem_limit).
+    expose:
+      - "5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - buildtruck-network
+    restart: always
+    mem_limit: 220m
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
+
+networks:
+  buildtruck-network:
+    driver: bridge

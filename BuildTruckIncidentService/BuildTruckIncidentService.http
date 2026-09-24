@@ -1,0 +1,6 @@
+@BuildTruckIncidentService_HostAddress = http://localhost:5263
+
+GET {{BuildTruckIncidentService_HostAddress}}/api/v1/incident/1
+Accept: application/json
+
+###

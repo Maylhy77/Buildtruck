@@ -1,0 +1,33 @@
+namespace BuildTruckPersonnelService.Personnel.Interfaces.REST.Resources;
+
+public record PersonnelResource(
+    int Id,
+    int ProjectId,
+    string Name,
+    string Lastname,
+    string FullName,
+    string DocumentNumber,
+    string Position,
+    string Department,
+    string PersonnelType,
+    string Status,
+    decimal MonthlyAmount,
+    decimal TotalAmount,
+    decimal Discount,
+    string? Bank,
+    string? AccountNumber,
+    DateTime? StartDate,
+    DateTime? EndDate,
+    string? Phone,
+    string? Email,
+    string? AvatarUrl,
+    int WorkedDays,
+    int CompensatoryDays,
+    int UnpaidLeave,
+    int Absences,
+    int Sundays,
+    int TotalDays,
+    Dictionary<string, string>? MonthlyAttendanceData,
+    DateTimeOffset? CreatedAt,
+    DateTimeOffset? UpdatedAt
+);

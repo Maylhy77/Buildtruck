@@ -1,0 +1,6 @@
+@BuildTruckUserService_HostAddress = http://localhost:5252
+
+GET {{BuildTruckUserService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
